@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -19,6 +20,13 @@ type Book struct {
 	Author    string `json:"author"`
 	Title     string `json:"title"`
 	Publisher string `json:"publisher"`
+}
+
+type User struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Phone    string `json:"phone"`
+	Password string `json:"password"`
 }
 
 func (r *Repository) CreateBook(context *fiber.Ctx) error {
@@ -86,6 +94,30 @@ func (r *Repository) DeleteBook(context *fiber.Ctx) error {
 	return nil
 }
 
+func (r *Repository) UserRegister(context *fiber.Ctx) error {
+	user := User{}
+	err := context.BodyParser(&user)
+	if err != nil {
+		context.Status(http.StatusUnprocessableEntity).JSON(
+			&fiber.Map{"message": err, "success": false})
+		return nil
+	}
+	if user.Email == "" {
+		err = errors.New("email is missing")
+		context.Status(http.StatusNotAcceptable).JSON(
+			&fiber.Map{"message": err.Error(), "success": false})
+		return nil
+	}
+	err = r.DB.Create(&user).Error
+	if err != nil {
+		context.Status(http.StatusBadRequest).JSON(
+			&fiber.Map{"message": err})
+		return err
+	}
+	context.Status(http.StatusCreated).JSON(&fiber.Map{"message": "User Registered Successfully"})
+	return nil
+}
+
 type Repository struct {
 	DB *gorm.DB
 }
@@ -96,6 +128,7 @@ func (r *Repository) SetupRoutes(app *fiber.App) {
 	api.Delete("/delete_book/:id", r.DeleteBook)
 	api.Get("/get_book/:id", r.GetBookByID)
 	api.Get("/books", r.GetBooks)
+	api.Post("/user/register", r.UserRegister)
 }
 
 func main() {
@@ -112,7 +145,7 @@ func main() {
 		DBName:   os.Getenv("DB_NAME"),
 		SSLMode:  os.Getenv("DB_SSLMODE"),
 	}
-	fmt.Print(config)
+	fmt.Println(config)
 	db, err := storage.NewConnection(config)
 
 	if err != nil {

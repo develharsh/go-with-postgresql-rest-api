@@ -3,17 +3,18 @@ package storage
 import (
 	"fmt"
 
+	"github.com/develharsh/golang-fiber-postgresql-rest-api/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
 type Config struct {
-	Host     string ``
-	Port     string ``
-	Password string ``
-	User     string ``
-	DBName   string ``
-	SSLMode  string ``
+	Host     string
+	Port     string
+	Password string
+	User     string
+	DBName   string
+	SSLMode  string
 }
 
 func NewConnection(config *Config) (*gorm.DB, error) {
@@ -23,5 +24,6 @@ func NewConnection(config *Config) (*gorm.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	models.Migrate(db)
 	return db, nil
 }
